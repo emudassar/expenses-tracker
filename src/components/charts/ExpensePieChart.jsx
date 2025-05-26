@@ -7,26 +7,22 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 function ExpensePieChart() {
   const { expenses } = useExpenses();
 
-  // Declare labels separately
-  const labels = ['Food', 'Transport', 'Utilities', 'Entertainment', 'Others'];
-
-  // Calculate dataset data using labels
-  const datasetData = expenses.reduce(
-    (acc, expense) => {
-      const index = labels.indexOf(expense.category);
-      if (index !== -1) acc[index] += expense.amount;
-      return acc;
-    },
-    new Array(labels.length).fill(0)
-  );
+  const categories = [...new Set(expenses.map((expense) => expense.category))];
+  const dataByCategory = categories.map((category) => ({
+    category,
+    total: expenses
+      .filter((expense) => expense.category === category)
+      .reduce((sum, expense) => sum + Number(expense.amount), 0),
+  }));
 
   const data = {
-    labels,
+    labels: dataByCategory.map((item) => item.category),
     datasets: [
       {
-        data: datasetData,
-        backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6B7280'],
-        hoverBackgroundColor: ['#4338CA', '#059669', '#D97706', '#DC2626', '#4B5563'],
+        data: dataByCategory.map((item) => item.total),
+        backgroundColor: ['#10b981', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6'],
+        borderColor: '#ffffff',
+        borderWidth: 2,
       },
     ],
   };
@@ -35,14 +31,24 @@ function ExpensePieChart() {
     responsive: true,
     plugins: {
       legend: { position: 'top' },
-      tooltip: { enabled: true },
+      tooltip: {
+        callbacks: {
+          label: (context) => `${context.label}: $${context.raw.toFixed(2)}`,
+        },
+      },
     },
   };
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold text-neutral mb-4">Expense Breakdown</h3>
-      <Pie data={data} options={options} />
+    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+      <h3 className="text-lg font-semibold text-neutral dark:text-white mb-4">Expense Breakdown</h3>
+      {dataByCategory.length > 0 ? (
+        <div className="max-w-sm mx-auto">
+          <Pie data={data} options={options} />
+        </div>
+      ) : (
+        <p className="text-sm text-neutral dark:text-white text-center">No expenses to display.</p>
+      )}
     </div>
   );
 }

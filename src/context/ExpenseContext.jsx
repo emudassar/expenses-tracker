@@ -1,53 +1,43 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const ExpenseContext = createContext();
 
 export function ExpenseProvider({ children }) {
-  const [expenses, setExpenses] = useState([
-    { id: 1, category: 'Food', amount: 300, date: '2025-05-01' },
-    { id: 2, category: 'Transport', amount: 150, date: '2025-05-02' },
-    { id: 3, category: 'Utilities', amount: 200, date: '2025-05-03' },
-    { id: 4, category: 'Entertainment', amount: 100, date: '2025-05-04' },
-    { id: 5, category: 'Others', amount: 50, date: '2025-05-05' },
-  ]);
-
-  const [budgets, setBudgets] = useState({
-    Food: 500,
-    Transport: 300,
-    Utilities: 400,
-    Entertainment: 200,
-    Others: 100,
+  const [expenses, setExpenses] = useState(() => {
+    const saved = localStorage.getItem('expenses');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [budgets, setBudgets] = useState(() => {
+    const saved = localStorage.getItem('budgets');
+    return saved ? JSON.parse(saved) : {};
   });
 
-  const [categories, setCategories] = useState([
-    'Food',
-    'Transport',
-    'Utilities',
-    'Entertainment',
-    'Others',
-  ]);
+  useEffect(() => {
+    localStorage.setItem('expenses', JSON.stringify(expenses));
+  }, [expenses]);
 
-  const addExpense = (expense) => {
-    setExpenses([...expenses, { id: Date.now(), ...expense }]);
-  };
+  useEffect(() => {
+    localStorage.setItem('budgets', JSON.stringify(budgets));
+  }, [budgets]);
 
-  const addBudget = (category, amount) => {
-    setBudgets({ ...budgets, [category]: amount });
-  };
-
-  const addCategory = (category) => {
-    setCategories([...categories, category]);
+  const resetData = () => {
+    setExpenses([]);
+    setBudgets({});
+    localStorage.removeItem('expenses');
+    localStorage.removeItem('budgets');
   };
 
   return (
-    <ExpenseContext.Provider
-      value={{ expenses, budgets, categories, addExpense, addBudget, addCategory }}
-    >
+    <ExpenseContext.Provider value={{ expenses, setExpenses, budgets, setBudgets, resetData }}>
       {children}
     </ExpenseContext.Provider>
   );
 }
 
 export function useExpenses() {
-  return useContext(ExpenseContext);
+  const context = useContext(ExpenseContext);
+  if (!context) {
+    throw new Error('useExpenses must be used within an ExpenseProvider');
+  }
+  return context;
 }
